@@ -75,6 +75,13 @@ class ServeForwardResult(BaseModel):
     output: Any
 
 
+class ServeSentimentResult(BaseModel):
+    """
+    Sentiment result model
+    """
+    predictions: List[dict]
+
+
 class ServeCommand(BaseTransformersCLICommand):
     @staticmethod
     def register_subcommand(parser: ArgumentParser):
@@ -149,6 +156,13 @@ class ServeCommand(BaseTransformersCLICommand):
                         response_class=JSONResponse,
                         methods=["POST"],
                     ),
+                    APIRoute(
+                        "/sentiment",
+                        self.sentiment,
+                        response_model=ServeSentimentResult,
+                        response_class=JSONResponse,
+                        methods=["POST"],
+                    ),
                 ],
                 timeout=600,
             )
@@ -212,3 +226,19 @@ class ServeCommand(BaseTransformersCLICommand):
             return ServeForwardResult(output=output)
         except Exception as e:
             raise HTTPException(500, {"error": str(e)})
+
+    def sentiment(
+        self,
+        turns: List[dict] = Body(None, embed=True)
+    ):
+        try:
+            sentence_ids = [sentence['sentenceId'] for turn in turns for sentence in turn['sentences']]
+            text = [sentence['text'] for turn in turns for sentence in turn['sentences']]
+            results = self._pipeline(*text)
+            for i, r in enumerate(results):
+                r['score'] = r['score'].item()
+                r['sentenceId'] = sentence_ids[i]
+            return ServeSentimentResult(predictions=results)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail={"model": "", "error": str(e)})
+

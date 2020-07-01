@@ -62,6 +62,8 @@ if _has_sklearn:
             return pearson_and_spearman(preds, labels)
         elif task_name == "qqp":
             return acc_and_f1(preds, labels)
+        elif task_name == "effort":
+            return acc_and_f1(preds, labels)
         elif task_name == "mnli":
             return {"mnli/acc": simple_accuracy(preds, labels)}
         elif task_name == "mnli-mm":
